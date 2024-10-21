@@ -1,0 +1,900 @@
+# PIPELINE DEFINITION
+# Name: heart-disease-predictor-training-pipeline
+# Inputs:
+#    data_bucket: str
+#    dataset_uri: str
+#    model_repo: str
+#    model_repo_uri: str
+#    project_id: str
+#    thresholds_dict_str: str
+# Outputs:
+#    dt-model-evaluation-kpi: system.Metrics
+#    dt-model-evaluation-metrics: system.ClassificationMetrics
+#    lr-model-evaluation-kpi: system.Metrics
+#    lr-model-evaluation-metrics: system.ClassificationMetrics
+components:
+  comp-compare-model:
+    executorLabel: exec-compare-model
+    inputDefinitions:
+      artifacts:
+        dt_metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        lr_metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-condition-1:
+    dag:
+      tasks:
+        condition-2:
+          componentRef:
+            name: comp-condition-2
+          inputs:
+            artifacts:
+              pipelinechannel--train-dt-model:
+                componentInputArtifact: pipelinechannel--train-dt-model
+            parameters:
+              pipelinechannel--compare-model-Output:
+                componentInputParameter: pipelinechannel--compare-model-Output
+              pipelinechannel--dt-model-evaluation-approval:
+                componentInputParameter: pipelinechannel--dt-model-evaluation-approval
+              pipelinechannel--model_repo:
+                componentInputParameter: pipelinechannel--model_repo
+              pipelinechannel--project_id:
+                componentInputParameter: pipelinechannel--project_id
+          taskInfo:
+            name: Did DT Model Pass Threshold
+          triggerPolicy:
+            condition: inputs.parameter_values['pipelinechannel--dt-model-evaluation-approval']
+              == true
+    inputDefinitions:
+      artifacts:
+        pipelinechannel--train-dt-model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        pipelinechannel--compare-model-Output:
+          parameterType: STRING
+        pipelinechannel--dt-model-evaluation-approval:
+          parameterType: BOOLEAN
+        pipelinechannel--model_repo:
+          parameterType: STRING
+        pipelinechannel--project_id:
+          parameterType: STRING
+  comp-condition-2:
+    dag:
+      tasks:
+        upload-model-to-gcs:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-upload-model-to-gcs
+          inputs:
+            artifacts:
+              model:
+                componentInputArtifact: pipelinechannel--train-dt-model
+            parameters:
+              model_repo:
+                componentInputParameter: pipelinechannel--model_repo
+              project_id:
+                componentInputParameter: pipelinechannel--project_id
+          taskInfo:
+            name: upload-model-to-gcs
+    inputDefinitions:
+      artifacts:
+        pipelinechannel--train-dt-model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        pipelinechannel--compare-model-Output:
+          parameterType: STRING
+        pipelinechannel--dt-model-evaluation-approval:
+          parameterType: BOOLEAN
+        pipelinechannel--model_repo:
+          parameterType: STRING
+        pipelinechannel--project_id:
+          parameterType: STRING
+  comp-condition-3:
+    dag:
+      tasks:
+        condition-4:
+          componentRef:
+            name: comp-condition-4
+          inputs:
+            artifacts:
+              pipelinechannel--train-lr-model:
+                componentInputArtifact: pipelinechannel--train-lr-model
+            parameters:
+              pipelinechannel--compare-model-Output:
+                componentInputParameter: pipelinechannel--compare-model-Output
+              pipelinechannel--lr-model-evaluation-approval:
+                componentInputParameter: pipelinechannel--lr-model-evaluation-approval
+              pipelinechannel--model_repo:
+                componentInputParameter: pipelinechannel--model_repo
+              pipelinechannel--project_id:
+                componentInputParameter: pipelinechannel--project_id
+          taskInfo:
+            name: Did LR Model Pass Threshold
+          triggerPolicy:
+            condition: inputs.parameter_values['pipelinechannel--lr-model-evaluation-approval']
+              == true
+    inputDefinitions:
+      artifacts:
+        pipelinechannel--train-lr-model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        pipelinechannel--compare-model-Output:
+          parameterType: STRING
+        pipelinechannel--lr-model-evaluation-approval:
+          parameterType: BOOLEAN
+        pipelinechannel--model_repo:
+          parameterType: STRING
+        pipelinechannel--project_id:
+          parameterType: STRING
+  comp-condition-4:
+    dag:
+      tasks:
+        upload-model-to-gcs-2:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-upload-model-to-gcs-2
+          inputs:
+            artifacts:
+              model:
+                componentInputArtifact: pipelinechannel--train-lr-model
+            parameters:
+              model_repo:
+                componentInputParameter: pipelinechannel--model_repo
+              project_id:
+                componentInputParameter: pipelinechannel--project_id
+          taskInfo:
+            name: upload-model-to-gcs-2
+    inputDefinitions:
+      artifacts:
+        pipelinechannel--train-lr-model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        pipelinechannel--compare-model-Output:
+          parameterType: STRING
+        pipelinechannel--lr-model-evaluation-approval:
+          parameterType: BOOLEAN
+        pipelinechannel--model_repo:
+          parameterType: STRING
+        pipelinechannel--project_id:
+          parameterType: STRING
+  comp-dt-model-evaluation:
+    executorLabel: exec-dt-model-evaluation
+    inputDefinitions:
+      artifacts:
+        model_dt:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        test_set:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        thresholds_dict_str:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        kpi:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        metrics:
+          artifactType:
+            schemaTitle: system.ClassificationMetrics
+            schemaVersion: 0.0.1
+      parameters:
+        approval:
+          parameterType: BOOLEAN
+  comp-importer:
+    executorLabel: exec-importer
+    inputDefinitions:
+      parameters:
+        uri:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        artifact:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-lr-model-evaluation:
+    executorLabel: exec-lr-model-evaluation
+    inputDefinitions:
+      artifacts:
+        model_lr:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        test_set:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        thresholds_dict_str:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        kpi:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        metrics:
+          artifactType:
+            schemaTitle: system.ClassificationMetrics
+            schemaVersion: 0.0.1
+      parameters:
+        approval:
+          parameterType: BOOLEAN
+  comp-train-dt:
+    executorLabel: exec-train-dt
+    inputDefinitions:
+      artifacts:
+        features:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+  comp-train-lr:
+    executorLabel: exec-train-lr
+    inputDefinitions:
+      artifacts:
+        features:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+  comp-train-test-split:
+    executorLabel: exec-train-test-split
+    inputDefinitions:
+      artifacts:
+        dataset:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        dataset_test:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        dataset_train:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-upload-model-to-gcs:
+    executorLabel: exec-upload-model-to-gcs
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        model_repo:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+  comp-upload-model-to-gcs-2:
+    executorLabel: exec-upload-model-to-gcs-2
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        model_repo:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-compare-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - compare_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef compare_model(\n    dt_metrics: Input[Metrics],\n    lr_metrics:\
+          \ Input[Metrics],\n) -> str:\n    import logging\n\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    dt_acc = dt_metrics.metadata[\"accuracy\"]\n    lr_acc = lr_metrics.metadata[\"\
+          accuracy\"]\n\n    logging.info(f\"Decision Tree Accuracy: {dt_acc}\")\n\
+          \    logging.info(f\"Logistic Regression Accuracy: {lr_acc}\")\n\n    if\
+          \ dt_acc > lr_acc:\n        logging.info(\"Decision Tree model selected.\"\
+          )\n        return \"DT\"\n    else:\n        logging.info(\"Logistic Regression\
+          \ model selected.\")\n        return \"LR\"\n\n"
+        image: python:3.10.7-slim
+    exec-dt-model-evaluation:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - dt_model_evaluation
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn==1.3.2'\
+          \ 'numpy' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef dt_model_evaluation(\n    test_set:  Input[Dataset],\n    model_dt:\
+          \ Input[Model],\n    thresholds_dict_str: str,\n    metrics: Output[ClassificationMetrics],\n\
+          \    kpi: Output[Metrics]\n) -> NamedTuple('outputs', approval=bool):\n\n\
+          \    import pandas as pd\n    from sklearn.metrics import roc_curve, confusion_matrix,\
+          \ accuracy_score\n    import json\n    import pickle\n    from numpy import\
+          \ nan_to_num\n\n    # Define a function to check if the accuracy is above\
+          \ the threshold\n    def threshold_check(val1, val2):\n        return val1\
+          \ >= val2\n\n    # Load the test dataset\n    data = pd.read_csv(test_set.path\
+          \ + \".csv\")\n\n    # Load the saved model\n    with open(model_dt.path\
+          \ + \".pkl\", 'rb') as file:\n        model = pickle.load(file)\n\n    #\
+          \ Predict the target values\n    y_test = data.drop(columns=[\"HeartDisease\"\
+          ])\n    y_target = data['HeartDisease']\n    y_pred = model.predict(y_test)\n\
+          \    y_scores = model.predict_proba(y_test)[:, 1]\n\n    # Calculate the\
+          \ ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target, y_score=y_scores,\
+          \ pos_label=True)\n    thresholds = nan_to_num(thresholds)\n    metrics.log_roc_curve(fpr,\
+          \ tpr, thresholds)\n\n    # Calculate the confusion matrix\n    metrics.log_confusion_matrix(\n\
+          \        ['Negative', 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n\
+          \    )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
+          \ y_pred.round())\n    thresholds_dict = json.loads(thresholds_dict_str)\n\
+          \    model_dt.metadata[\"accuracy\"] = float(accuracy)\n    kpi.log_metric(\"\
+          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(float(accuracy),\
+          \ thresholds_dict['roc'])\n    return (approval_value,)\n\n"
+        image: python:3.10.7-slim
+    exec-importer:
+      importer:
+        artifactUri:
+          runtimeParameter: uri
+        typeSchema:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+    exec-lr-model-evaluation:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - lr_model_evaluation
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn==1.3.2'\
+          \ 'numpy' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef lr_model_evaluation(\n    test_set:  Input[Dataset],\n    model_lr:\
+          \ Input[Model],\n    thresholds_dict_str: str,\n    metrics: Output[ClassificationMetrics],\n\
+          \    kpi: Output[Metrics]\n) -> NamedTuple('outputs', approval=bool):\n\n\
+          \    import pandas as pd\n    from sklearn.metrics import roc_curve, confusion_matrix,\
+          \ accuracy_score\n    import json\n    import pickle\n    from numpy import\
+          \ nan_to_num\n\n    # Define a function to check if the accuracy is above\
+          \ the threshold\n    def threshold_check(val1, val2):\n        return val1\
+          \ >= val2\n\n    # Load the test dataset\n    data = pd.read_csv(test_set.path\
+          \ + \".csv\")\n\n    # Load the saved model\n    with open(model_lr.path\
+          \ + \".pkl\", 'rb') as file:\n        model = pickle.load(file)\n\n    #\
+          \ Predict the target values\n    y_test = data.drop(columns=[\"HeartDisease\"\
+          ])\n    y_target = data['HeartDisease']\n    y_pred = model.predict(y_test)\n\
+          \    y_scores = model.predict_proba(y_test)[:, 1]\n\n    # Calculate the\
+          \ ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target, y_score=y_scores,\
+          \ pos_label=True)\n    thresholds = nan_to_num(thresholds)\n    metrics.log_roc_curve(fpr,\
+          \ tpr, thresholds)\n\n    # Calculate the confusion matrix\n    metrics.log_confusion_matrix(\n\
+          \        ['Negative', 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n\
+          \    )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
+          \ y_pred.round())\n    thresholds_dict = json.loads(thresholds_dict_str)\n\
+          \    model_lr.metadata[\"accuracy\"] = float(accuracy)\n    kpi.log_metric(\"\
+          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(float(accuracy),\
+          \ thresholds_dict['roc'])\n    return (approval_value,)\n\n"
+        image: python:3.10.7-slim
+    exec-train-dt:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_dt
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn==1.3.2'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_dt(features: Input[Dataset], model: Output[Model]):\n \
+          \   '''train a Decision Tree model'''\n    import pandas as pd\n    from\
+          \ sklearn.tree import DecisionTreeClassifier       \n    import pickle \n\
+          \n    # Load the dataset\n    data = pd.read_csv(features.path + \".csv\"\
+          )\n\n    # Initialize and train the Decision Regression model\n    model_dt\
+          \ = DecisionTreeClassifier(random_state=73, max_depth = 4, min_samples_leaf\
+          \ = 1)\n    model_dt.fit(data.drop('HeartDisease', axis=1), data['HeartDisease'])\n\
+          \n    # Add metadata to the model\n    model.metadata[\"framework\"] = \"\
+          Decision Tree\"\n\n    # Save the trained model to a file\n    file_name\
+          \ =f\"{model.path}.pkl\"\n    with open(file_name, 'wb') as file:  \n  \
+          \      pickle.dump(model_dt, file)\n\n"
+        image: python:3.10.7-slim
+    exec-train-lr:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_lr
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn==1.3.2'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_lr(features: Input[Dataset], model: Output[Model]):\n \
+          \   '''train a LogisticRegression model'''\n    import pandas as pd\n  \
+          \  from sklearn.linear_model import LogisticRegression        \n    import\
+          \ pickle \n\n    # Load the dataset\n    data = pd.read_csv(features.path\
+          \ + \".csv\")\n\n    # Initialize and train the Logistic Regression model\n\
+          \    model_lr = LogisticRegression(random_state=73, C=10, penalty= 'l2')\n\
+          \    model_lr.fit(data.drop('HeartDisease', axis=1), data['HeartDisease'])\n\
+          \n    # Add metadata to the model\n    model.metadata[\"framework\"] = \"\
+          Logistic Regression\"\n\n    # Save the trained model to a file\n    file_name\
+          \ =f\"{model.path}.pkl\"\n    with open(file_name, 'wb') as file:  \n  \
+          \      pickle.dump(model_lr, file)\n\n"
+        image: python:3.10.7-slim
+    exec-train-test-split:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_test_split
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_test_split(dataset: Input[Dataset], dataset_train: Output[Dataset],\
+          \ dataset_test: Output[Dataset]):\n    '''train_test_split'''\n    import\
+          \ pandas as pd\n    import logging \n    import sys\n    from sklearn.model_selection\
+          \ import train_test_split\n    from sklearn.preprocessing import MinMaxScaler,StandardScaler\n\
+          \    from sklearn.preprocessing import LabelEncoder\n\n    logging.basicConfig(stream=sys.stdout,\
+          \ level=logging.INFO) \n\n    df = pd.read_csv(dataset.path, index_col=None)\n\
+          \n    mms = MinMaxScaler() \n    ss = StandardScaler() \n    le = LabelEncoder()\n\
+          \n    # Encode categorical features\n    df['Sex'] = le.fit_transform(df['Sex'])\n\
+          \    df['ChestPainType'] = le.fit_transform(df['ChestPainType'])\n    df['RestingECG']\
+          \ = le.fit_transform(df['RestingECG'])\n    df['ExerciseAngina'] = le.fit_transform(df['ExerciseAngina'])\n\
+          \    df['ST_Slope'] = le.fit_transform(df['ST_Slope'])\n\n    # Standardize\
+          \ and normalize features as per notebook\n    df['Oldpeak'] = mms.fit_transform(df[['Oldpeak']])\n\
+          \    df['Age'] = ss.fit_transform(df[['Age']])\n    df['RestingBP'] = ss.fit_transform(df[['RestingBP']])\n\
+          \    df['Cholesterol'] = ss.fit_transform(df[['Cholesterol']])\n    df['MaxHR']\
+          \ = ss.fit_transform(df[['MaxHR']])\n\n    # Drop highly correlated features\
+          \ and missing values\n    df = df.drop(['RestingBP', 'RestingECG'], axis=1)\n\
+          \    df = df.dropna()\n\n    train, test = train_test_split(df, test_size=0.3,\
+          \ random_state=73)\n    train.to_csv(dataset_train.path + \".csv\" , index=False,\
+          \ encoding='utf-8-sig')\n    test.to_csv(dataset_test.path + \".csv\" ,\
+          \ index=False, encoding='utf-8-sig')\n\n"
+        image: python:3.10.7-slim
+    exec-upload-model-to-gcs:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - upload_model_to_gcs
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-storage'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef upload_model_to_gcs(project_id: str, model_repo: str, model:\
+          \ Input[Model]):\n    '''upload model to gsc'''\n    from google.cloud import\
+          \ storage   \n    import logging \n    import sys\n\n    logging.basicConfig(stream=sys.stdout,\
+          \ level=logging.INFO)    \n\n    client = storage.Client(project=project_id)\n\
+          \    bucket = client.bucket(model_repo)\n    blob = bucket.blob('heart_disease_model.pkl')\n\
+          \    source_file_name= model.path + '.pkl'\n\n    blob.upload_from_filename(source_file_name)\
+          \    \n\n    print(f\"File {source_file_name} uploaded to {model_repo}.\"\
+          )\n\n"
+        image: python:3.10.7-slim
+    exec-upload-model-to-gcs-2:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - upload_model_to_gcs
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-storage'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef upload_model_to_gcs(project_id: str, model_repo: str, model:\
+          \ Input[Model]):\n    '''upload model to gsc'''\n    from google.cloud import\
+          \ storage   \n    import logging \n    import sys\n\n    logging.basicConfig(stream=sys.stdout,\
+          \ level=logging.INFO)    \n\n    client = storage.Client(project=project_id)\n\
+          \    bucket = client.bucket(model_repo)\n    blob = bucket.blob('heart_disease_model.pkl')\n\
+          \    source_file_name= model.path + '.pkl'\n\n    blob.upload_from_filename(source_file_name)\
+          \    \n\n    print(f\"File {source_file_name} uploaded to {model_repo}.\"\
+          )\n\n"
+        image: python:3.10.7-slim
+pipelineInfo:
+  name: heart-disease-predictor-training-pipeline
+root:
+  dag:
+    outputs:
+      artifacts:
+        dt-model-evaluation-kpi:
+          artifactSelectors:
+          - outputArtifactKey: kpi
+            producerSubtask: dt-model-evaluation
+        dt-model-evaluation-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: dt-model-evaluation
+        lr-model-evaluation-kpi:
+          artifactSelectors:
+          - outputArtifactKey: kpi
+            producerSubtask: lr-model-evaluation
+        lr-model-evaluation-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: lr-model-evaluation
+    tasks:
+      compare-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-compare-model
+        dependentTasks:
+        - dt-model-evaluation
+        - lr-model-evaluation
+        inputs:
+          artifacts:
+            dt_metrics:
+              taskOutputArtifact:
+                outputArtifactKey: kpi
+                producerTask: dt-model-evaluation
+            lr_metrics:
+              taskOutputArtifact:
+                outputArtifactKey: kpi
+                producerTask: lr-model-evaluation
+        taskInfo:
+          name: compare-model
+      condition-1:
+        componentRef:
+          name: comp-condition-1
+        dependentTasks:
+        - compare-model
+        - dt-model-evaluation
+        - train-dt
+        inputs:
+          artifacts:
+            pipelinechannel--train-dt-model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train-dt
+          parameters:
+            pipelinechannel--compare-model-Output:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: compare-model
+            pipelinechannel--dt-model-evaluation-approval:
+              taskOutputParameter:
+                outputParameterKey: approval
+                producerTask: dt-model-evaluation
+            pipelinechannel--model_repo:
+              componentInputParameter: model_repo
+            pipelinechannel--project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: Choose DT Model
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--compare-model-Output']
+            == 'DT'
+      condition-3:
+        componentRef:
+          name: comp-condition-3
+        dependentTasks:
+        - compare-model
+        - lr-model-evaluation
+        - train-lr
+        inputs:
+          artifacts:
+            pipelinechannel--train-lr-model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train-lr
+          parameters:
+            pipelinechannel--compare-model-Output:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: compare-model
+            pipelinechannel--lr-model-evaluation-approval:
+              taskOutputParameter:
+                outputParameterKey: approval
+                producerTask: lr-model-evaluation
+            pipelinechannel--model_repo:
+              componentInputParameter: model_repo
+            pipelinechannel--project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: Choose LR Model
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--compare-model-Output']
+            == 'LR'
+      dt-model-evaluation:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-dt-model-evaluation
+        dependentTasks:
+        - train-dt
+        - train-test-split
+        inputs:
+          artifacts:
+            model_dt:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train-dt
+            test_set:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_test
+                producerTask: train-test-split
+          parameters:
+            thresholds_dict_str:
+              componentInputParameter: thresholds_dict_str
+        taskInfo:
+          name: dt-model-evaluation
+      importer:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-importer
+        inputs:
+          parameters:
+            uri:
+              componentInputParameter: dataset_uri
+        taskInfo:
+          name: importer
+      lr-model-evaluation:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-lr-model-evaluation
+        dependentTasks:
+        - train-lr
+        - train-test-split
+        inputs:
+          artifacts:
+            model_lr:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train-lr
+            test_set:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_test
+                producerTask: train-test-split
+          parameters:
+            thresholds_dict_str:
+              componentInputParameter: thresholds_dict_str
+        taskInfo:
+          name: lr-model-evaluation
+      train-dt:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-dt
+        dependentTasks:
+        - train-test-split
+        inputs:
+          artifacts:
+            features:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_train
+                producerTask: train-test-split
+        taskInfo:
+          name: train-dt
+      train-lr:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-lr
+        dependentTasks:
+        - train-test-split
+        inputs:
+          artifacts:
+            features:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_train
+                producerTask: train-test-split
+        taskInfo:
+          name: train-lr
+      train-test-split:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-test-split
+        dependentTasks:
+        - importer
+        inputs:
+          artifacts:
+            dataset:
+              taskOutputArtifact:
+                outputArtifactKey: artifact
+                producerTask: importer
+        taskInfo:
+          name: train-test-split
+  inputDefinitions:
+    parameters:
+      data_bucket:
+        parameterType: STRING
+      dataset_uri:
+        parameterType: STRING
+      model_repo:
+        parameterType: STRING
+      model_repo_uri:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+      thresholds_dict_str:
+        parameterType: STRING
+  outputDefinitions:
+    artifacts:
+      dt-model-evaluation-kpi:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+      dt-model-evaluation-metrics:
+        artifactType:
+          schemaTitle: system.ClassificationMetrics
+          schemaVersion: 0.0.1
+      lr-model-evaluation-kpi:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+      lr-model-evaluation-metrics:
+        artifactType:
+          schemaTitle: system.ClassificationMetrics
+          schemaVersion: 0.0.1
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.7.0
