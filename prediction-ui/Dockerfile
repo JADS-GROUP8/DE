@@ -12,8 +12,6 @@ COPY . .
 EXPOSE 5000
 # Environment Variables
 ENV PREDICTOR_API=http://predictor-api-server:5000/diabetes_predictor/
-#Add some meta data if necessary
-LABEL diabetes.predictor.api="0.0.1-beta"
 # Run our App
 CMD ["python3","app.py"]
 # We can also use an ENTRYPOINT and a CMD

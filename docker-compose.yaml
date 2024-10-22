@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  predictor-api:
+    image: heart-disease-predictor-api
+    container_name: heart-disease-predictor-api
+    ports:
+      - "5000:5000"
+    networks:
+      - heart-disease-network
+
+  predictor-ui:
+    image: heart-disease-predictor-ui
+    container_name: heart-disease-predictor-ui
+    environment:
+      - PREDICTOR_API=http://predictor-api:5000/heart_disease_predictor
+    ports:
+      - "5001:5000" # Expose the UI on port 5001 externally but map to 5000 internally
+    networks:
+      - heart-disease-network
+
+networks:
+  heart-disease-network:
+    driver: bridge
