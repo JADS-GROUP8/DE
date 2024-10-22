@@ -1,27 +1,27 @@
 <html>
   <head>
-    <title>Heart Disease Check Form</title>
+    <title>Heart Disease Likelihood Check Form</title>
   </head>
   <body>
     <form action="/checkheartdisease" method="POST">
-      <h1>Check My Heart Disease</h1>
+      <h1>Check My Likelihood of Heart Disease</h1>
 
       <label for="age">Age (years):</label>
       <input type="text" id="age" name="age" placeholder="age" /> <br />
 
       <label for="sex">Sex:</label>
       <select id="sex" name="sex">
-        <option value="0">Male</option>
-        <option value="1">Female</option>
+        <option value="1">Male</option>
+        <option value="0">Female</option>
       </select>
       <br />
 
       <label for="chestpain">Chest Pain Type:</label>
       <select id="chestpain" name="chestpain">
-        <option value="0">Typical Angina</option>
+        <option value="0">Asymptomatic</option>
+        <option value="3">Typical Angina</option>
         <option value="1">Atypical Angina</option>
         <option value="2">Non-Anginal Pain</option>
-        <option value="3">Asymptomatic</option>
       </select>
       <br />
 
@@ -59,9 +59,9 @@
 
       <label for="stslope">ST Slope:</label>
       <select id="stslope" name="stslope">
-        <option value="0">Upsloping</option>
+        <option value="2">Upsloping</option>
         <option value="1">Flat</option>
-        <option value="2">Downsloping</option>
+        <option value="0">Downsloping</option>
       </select>
       <br />
 
