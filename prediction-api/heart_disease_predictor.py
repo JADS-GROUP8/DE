@@ -4,6 +4,7 @@ import pandas as pd
 from flask import jsonify
 import logging
 
+
 class HeartDiseasePredictor:
     def __init__(self):
         # Initialize the model attribute to None
@@ -21,12 +22,10 @@ class HeartDiseasePredictor:
         # Check if the model is already loaded
         if self.model is None:
             try:
-                # Try to get the model repository path from environment variables
                 model_repo = os.environ['MODEL_REPO']
                 file_path = os.path.join(model_repo, "heart_disease_model.pkl")
                 self.model = self.load_model(file_path)
             except KeyError:
-                # If MODEL_REPO is not defined, print a message and load the model from the default path
                 print("MODEL_REPO is undefined")
                 self.model = self.load_model('heart_disease_model.pkl')
         
@@ -36,5 +35,6 @@ class HeartDiseasePredictor:
         # Make a prediction using the loaded model
         y_pred = self.model.predict(df)
         
-        # Return the prediction outcome as a JSON message with HTTP status code 200
+        # Return the prediction outcome as a JSON message 
+        # with HTTP status code 200
         return jsonify({'result': str(y_pred[0])}), 200
