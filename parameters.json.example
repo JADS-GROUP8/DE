@@ -1,0 +1,8 @@
+{
+  "project_id": "?",
+  "data_bucket": "data_de2024_?",
+  "dataset_uri": "gs://data_de2024_?/heart.csv",
+  "model_repo": "models_de2024_?",
+  "thresholds_dict_str": "{\"roc\":0.8}",
+  "model_repo_uri": "gs://models_de2024_?"
+}
