@@ -5,4 +5,5 @@
   "model_repo": "models_de2024_?",
   "thresholds_dict_str": "{\"roc\":0.8}",
   "model_repo_uri": "gs://models_de2024_?"
+  "trigger_id": "?"
 }
