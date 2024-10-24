@@ -7,6 +7,7 @@
 #    model_repo_uri: str
 #    project_id: str
 #    thresholds_dict_str: str
+#    trigger_id: str
 # Outputs:
 #    dt-model-evaluation-kpi: system.Metrics
 #    dt-model-evaluation-metrics: system.ClassificationMetrics
@@ -52,8 +53,10 @@ components:
                 componentInputParameter: pipelinechannel--model_repo
               pipelinechannel--project_id:
                 componentInputParameter: pipelinechannel--project_id
+              pipelinechannel--trigger_id:
+                componentInputParameter: pipelinechannel--trigger_id
           taskInfo:
-            name: Did DT Model Pass Threshold and is better than Production?
+            name: Did DT Model Pass Threshold
           triggerPolicy:
             condition: inputs.parameter_values['pipelinechannel--dt-model-evaluation-approval']
               == true
@@ -74,9 +77,26 @@ components:
           parameterType: STRING
         pipelinechannel--project_id:
           parameterType: STRING
+        pipelinechannel--trigger_id:
+          parameterType: STRING
   comp-condition-2:
     dag:
       tasks:
+        run-build-trigger:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-run-build-trigger
+          dependentTasks:
+          - upload-model-to-gcs
+          inputs:
+            parameters:
+              project_id:
+                componentInputParameter: pipelinechannel--project_id
+              trigger_id:
+                componentInputParameter: pipelinechannel--trigger_id
+          taskInfo:
+            name: run-build-trigger
         upload-model-to-gcs:
           cachingOptions:
             enableCache: true
@@ -112,6 +132,8 @@ components:
           parameterType: STRING
         pipelinechannel--project_id:
           parameterType: STRING
+        pipelinechannel--trigger_id:
+          parameterType: STRING
   comp-condition-3:
     dag:
       tasks:
@@ -133,8 +155,10 @@ components:
                 componentInputParameter: pipelinechannel--model_repo
               pipelinechannel--project_id:
                 componentInputParameter: pipelinechannel--project_id
+              pipelinechannel--trigger_id:
+                componentInputParameter: pipelinechannel--trigger_id
           taskInfo:
-            name: Did LR Model Pass Threshold and is better than Production?
+            name: Did LR Model Pass Threshold
           triggerPolicy:
             condition: inputs.parameter_values['pipelinechannel--lr-model-evaluation-approval']
               == true
@@ -155,9 +179,26 @@ components:
           parameterType: STRING
         pipelinechannel--project_id:
           parameterType: STRING
+        pipelinechannel--trigger_id:
+          parameterType: STRING
   comp-condition-4:
     dag:
       tasks:
+        run-build-trigger-2:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-run-build-trigger-2
+          dependentTasks:
+          - upload-model-to-gcs-2
+          inputs:
+            parameters:
+              project_id:
+                componentInputParameter: pipelinechannel--project_id
+              trigger_id:
+                componentInputParameter: pipelinechannel--trigger_id
+          taskInfo:
+            name: run-build-trigger-2
         upload-model-to-gcs-2:
           cachingOptions:
             enableCache: true
@@ -192,6 +233,8 @@ components:
         pipelinechannel--model_repo:
           parameterType: STRING
         pipelinechannel--project_id:
+          parameterType: STRING
+        pipelinechannel--trigger_id:
           parameterType: STRING
   comp-dt-model-evaluation:
     executorLabel: exec-dt-model-evaluation
@@ -277,6 +320,22 @@ components:
       parameters:
         approval:
           parameterType: BOOLEAN
+  comp-run-build-trigger:
+    executorLabel: exec-run-build-trigger
+    inputDefinitions:
+      parameters:
+        project_id:
+          parameterType: STRING
+        trigger_id:
+          parameterType: STRING
+  comp-run-build-trigger-2:
+    executorLabel: exec-run-build-trigger-2
+    inputDefinitions:
+      parameters:
+        project_id:
+          parameterType: STRING
+        trigger_id:
+          parameterType: STRING
   comp-train-dt:
     executorLabel: exec-train-dt
     inputDefinitions:
@@ -543,6 +602,80 @@ deploymentSpec:
           accuracy\", float(accuracy))\n\n    approval_value = threshold_check(roc_auc_score(y_target,\
           \ y_scores), thresholds_dict['roc']) and float(accuracy) > deployed_model_acc\n\
           \    return (approval_value,)\n\n"
+        image: python:3.10.7-slim
+    exec-run-build-trigger:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - run_build_trigger
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-build'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef run_build_trigger(project_id:str, trigger_id:str):\n    import\
+          \ sys\n    from google.cloud.devtools import cloudbuild_v1    \n    import\
+          \ logging \n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
+          \ \n\n    # Create a client\n    client = cloudbuild_v1.CloudBuildClient()\n\
+          \    name = f\"projects/{project_id}/locations/us-central1/triggers/{trigger_id}\"\
+          \n    # Initialize request argument(s)\n    request = cloudbuild_v1.RunBuildTriggerRequest(\
+          \        \n        project_id=project_id,\n        trigger_id=trigger_id,\n\
+          \        name=name\n    )\n\n    # Make the request\n    operation = client.run_build_trigger(request=request)\n\
+          \n    logging.info(\"Trigger the CI-CD Pipeline: \" + trigger_id)\n\n"
+        image: python:3.10.7-slim
+    exec-run-build-trigger-2:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - run_build_trigger
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-build'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef run_build_trigger(project_id:str, trigger_id:str):\n    import\
+          \ sys\n    from google.cloud.devtools import cloudbuild_v1    \n    import\
+          \ logging \n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
+          \ \n\n    # Create a client\n    client = cloudbuild_v1.CloudBuildClient()\n\
+          \    name = f\"projects/{project_id}/locations/us-central1/triggers/{trigger_id}\"\
+          \n    # Initialize request argument(s)\n    request = cloudbuild_v1.RunBuildTriggerRequest(\
+          \        \n        project_id=project_id,\n        trigger_id=trigger_id,\n\
+          \        name=name\n    )\n\n    # Make the request\n    operation = client.run_build_trigger(request=request)\n\
+          \n    logging.info(\"Trigger the CI-CD Pipeline: \" + trigger_id)\n\n"
         image: python:3.10.7-slim
     exec-train-dt:
       container:
@@ -823,6 +956,8 @@ root:
               componentInputParameter: model_repo
             pipelinechannel--project_id:
               componentInputParameter: project_id
+            pipelinechannel--trigger_id:
+              componentInputParameter: trigger_id
         taskInfo:
           name: Choose DT Model
         triggerPolicy:
@@ -858,6 +993,8 @@ root:
               componentInputParameter: model_repo
             pipelinechannel--project_id:
               componentInputParameter: project_id
+            pipelinechannel--trigger_id:
+              componentInputParameter: trigger_id
         taskInfo:
           name: Choose LR Model
         triggerPolicy:
@@ -1001,6 +1138,8 @@ root:
       project_id:
         parameterType: STRING
       thresholds_dict_str:
+        parameterType: STRING
+      trigger_id:
         parameterType: STRING
   outputDefinitions:
     artifacts:
