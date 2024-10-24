@@ -1,13 +1,112 @@
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Likelihood of Heart Disease</title>
-  </head>
-  <body>
-    {% if prediction_variable==1 %}
-    <p>It is likely that you may have heart disease.</p>
-    {% else %}
-    <p>It is unlikely that you have heart disease.</p>
-    {% endif %}
-  </body>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #ff9ff3;
+            --text-color: #333;
+            --background-color: #f0f0f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: rgb(137,131,245);
+            background: linear-gradient(90deg, rgba(137,131,245,1) 0%, rgba(255,0,33,1) 60%);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #3a0ca3;
+            margin-bottom: 30px;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .back-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: block;
+            width: fit-content;
+            margin: 30px auto 0;
+        }
+
+        .back-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .form-icon {
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 25%; /* This will make the image circular */
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                max-width: 95%;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://cdn11.bigcommerce.com/s-dl22izwaan/images/stencil/original/products/1047/8585/apik5qc8i__70701.1625592298.jpg?c=1" alt="Heart icon" class="form-icon" height="100px" width="100px">
+        <h1>Likelihood of Heart Disease</h1>
+        {% if prediction_variable==1 %}
+        <p>It is likely that you may have heart disease.</p>
+        {% else %}
+        <p>It is unlikely that you have heart disease.</p>
+        {% endif %}
+    </div>
+</body>
 </html>
-<!-- check https://flask.palletsprojects.com/en/2.3.x/tutorial/templates/ for information if needed -->

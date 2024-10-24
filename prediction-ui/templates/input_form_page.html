@@ -1,71 +1,183 @@
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heart Disease Likelihood Check Form</title>
-  </head>
-  <body>
-    <form action="/checkheartdisease" method="POST">
-      <h1>Check My Likelihood of Heart Disease</h1>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #ff9ff3;
+            --text-color: #333;
+            --background-color: #f0f0f0;
+        }
 
-      <label for="age">Age (years):</label>
-      <input type="text" id="age" name="age" placeholder="age" /> <br />
-      <!-- IDs are as per the training notebook -->
-      <label for="sex">Sex:</label>
-      <select id="sex" name="sex">
-        <option value="0">Male</option>
-        <option value="1">Female</option>
-      </select>
-      <br />
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-      <label for="chestpain">Chest Pain Type:</label>
-      <select id="chestpain" name="chestpain">
-        <option value="2">Asymptomatic</option>
-        <option value="0">Atypical Angina</option>
-        <option value="1">Non-Anginal Pain</option>
-        <option value="3">Typical Angina</option>
-      </select>
-      <br />
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: rgb(137,131,245);
+            background: linear-gradient(90deg, rgba(137,131,245,1) 0%, rgba(255,0,33,1) 60%);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-      <label for="cholesterol">Cholesterol:</label>
-      <input
-        type="text"
-        id="cholesterol"
-        name="cholesterol"
-        placeholder="cholesterol"
-      />
-      <br />
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
 
-      <label for="fastingbs">Fasting Blood Sugar:</label>
-      <input
-        type="text"
-        id="fastingbs"
-        name="fastingbs"
-        placeholder="fastingbs"
-      />
-      <br />
+        h1 {
+            text-align: center;
+            color: #3a0ca3; /* Changed from var(--primary-color) to a darker purple */
+            margin-bottom: 30px;
+        }
 
-      <label for="maxhr">Max Heart Rate:</label>
-      <input type="text" id="maxhr" name="maxhr" placeholder="maxhr" /> <br />
+        form {
+            display: grid;
+            gap: 20px;
+        }
 
-      <label for="exerciseangina">Exercise Induced Angina:</label>
-      <select id="exerciseangina" name="exerciseangina">
-        <option value="0">No</option>
-        <option value="1">Yes</option>
-      </select>
-      <br />
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
 
-      <label for="oldpeak">Oldpeak:</label>
-      <input type="text" id="oldpeak" name="oldpeak" placeholder="oldpeak" />
-      <br />
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
 
-      <label for="stslope">ST Slope:</label>
-      <select id="stslope" name="stslope">
-        <option value="0">Upsloping</option>
-        <option value="1">Flat</option>
-        <option value="2">Downsloping</option>
-      </select>
-      <br />
+        input[type="submit"] {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
 
-      <p><input type="submit" value="Check" /></p>
-    </form>
-  </body>
+        input[type="submit"]:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .form-icon {
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 25%; /* This will make the image circular */
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                max-width: 95%;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://cdn11.bigcommerce.com/s-dl22izwaan/images/stencil/original/products/1047/8585/apik5qc8i__70701.1625592298.jpg?c=1" alt="Heart icon" class="form-icon" height="100px" width="100px">
+        <h1>Check My Likelihood of Heart Disease</h1>
+        <form action="/checkheartdisease" method="POST">
+            <div>
+                <label for="age">Age (years):</label>
+                <input type="text" id="age" name="age" placeholder="Enter your age" required>
+            </div>
+
+            <div>
+                <label for="sex">Sex:</label>
+                <select id="sex" name="sex" required>
+                    <option value="">Select your sex</option>
+                    <option value="0">Male</option>
+                    <option value="1">Female</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="chestpain">Chest Pain Type:</label>
+                <select id="chestpain" name="chestpain" required>
+                    <option value="">Select chest pain type</option>
+                    <option value="2">Asymptomatic</option>
+                    <option value="0">Atypical Angina</option>
+                    <option value="1">Non-Anginal Pain</option>
+                    <option value="3">Typical Angina</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="cholesterol">Cholesterol:</label>
+                <input type="text" id="cholesterol" name="cholesterol" placeholder="Enter cholesterol level" required>
+            </div>
+
+            <div>
+                <label for="fastingbs">Fasting Blood Sugar:</label>
+                <input type="text" id="fastingbs" name="fastingbs" placeholder="Enter fasting blood sugar" required>
+            </div>
+
+            <div>
+                <label for="maxhr">Max Heart Rate:</label>
+                <input type="text" id="maxhr" name="maxhr" placeholder="Enter max heart rate" required>
+            </div>
+
+            <div>
+                <label for="exerciseangina">Exercise Induced Angina:</label>
+                <select id="exerciseangina" name="exerciseangina" required>
+                    <option value="">Select option</option>
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="oldpeak">Oldpeak:</label>
+                <input type="text" id="oldpeak" name="oldpeak" placeholder="Enter oldpeak value" required>
+            </div>
+
+            <div>
+                <label for="stslope">ST Slope:</label>
+                <select id="stslope" name="stslope" required>
+                    <option value="">Select ST slope</option>
+                    <option value="0">Upsloping</option>
+                    <option value="1">Flat</option>
+                    <option value="2">Downsloping</option>
+                </select>
+            </div>
+
+            <input type="submit" value="Check">
+        </form>
+    </div>
+</body>
 </html>
