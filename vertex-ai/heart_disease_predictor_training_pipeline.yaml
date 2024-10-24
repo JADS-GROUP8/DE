@@ -27,7 +27,9 @@ components:
             schemaVersion: 0.0.1
     outputDefinitions:
       parameters:
-        Output:
+        accuracy:
+          parameterType: NUMBER_DOUBLE
+        model_name:
           parameterType: STRING
   comp-condition-1:
     dag:
@@ -40,8 +42,10 @@ components:
               pipelinechannel--train-dt-model:
                 componentInputArtifact: pipelinechannel--train-dt-model
             parameters:
-              pipelinechannel--compare-model-Output:
-                componentInputParameter: pipelinechannel--compare-model-Output
+              pipelinechannel--compare-model-accuracy:
+                componentInputParameter: pipelinechannel--compare-model-accuracy
+              pipelinechannel--compare-model-model_name:
+                componentInputParameter: pipelinechannel--compare-model-model_name
               pipelinechannel--dt-model-evaluation-approval:
                 componentInputParameter: pipelinechannel--dt-model-evaluation-approval
               pipelinechannel--model_repo:
@@ -60,7 +64,9 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
-        pipelinechannel--compare-model-Output:
+        pipelinechannel--compare-model-accuracy:
+          parameterType: NUMBER_DOUBLE
+        pipelinechannel--compare-model-model_name:
           parameterType: STRING
         pipelinechannel--dt-model-evaluation-approval:
           parameterType: BOOLEAN
@@ -81,6 +87,8 @@ components:
               model:
                 componentInputArtifact: pipelinechannel--train-dt-model
             parameters:
+              accuracy:
+                componentInputParameter: pipelinechannel--compare-model-accuracy
               model_repo:
                 componentInputParameter: pipelinechannel--model_repo
               project_id:
@@ -94,7 +102,9 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
-        pipelinechannel--compare-model-Output:
+        pipelinechannel--compare-model-accuracy:
+          parameterType: NUMBER_DOUBLE
+        pipelinechannel--compare-model-model_name:
           parameterType: STRING
         pipelinechannel--dt-model-evaluation-approval:
           parameterType: BOOLEAN
@@ -113,8 +123,10 @@ components:
               pipelinechannel--train-lr-model:
                 componentInputArtifact: pipelinechannel--train-lr-model
             parameters:
-              pipelinechannel--compare-model-Output:
-                componentInputParameter: pipelinechannel--compare-model-Output
+              pipelinechannel--compare-model-accuracy:
+                componentInputParameter: pipelinechannel--compare-model-accuracy
+              pipelinechannel--compare-model-model_name:
+                componentInputParameter: pipelinechannel--compare-model-model_name
               pipelinechannel--lr-model-evaluation-approval:
                 componentInputParameter: pipelinechannel--lr-model-evaluation-approval
               pipelinechannel--model_repo:
@@ -133,7 +145,9 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
-        pipelinechannel--compare-model-Output:
+        pipelinechannel--compare-model-accuracy:
+          parameterType: NUMBER_DOUBLE
+        pipelinechannel--compare-model-model_name:
           parameterType: STRING
         pipelinechannel--lr-model-evaluation-approval:
           parameterType: BOOLEAN
@@ -154,6 +168,8 @@ components:
               model:
                 componentInputArtifact: pipelinechannel--train-lr-model
             parameters:
+              accuracy:
+                componentInputParameter: pipelinechannel--compare-model-accuracy
               model_repo:
                 componentInputParameter: pipelinechannel--model_repo
               project_id:
@@ -167,7 +183,9 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
-        pipelinechannel--compare-model-Output:
+        pipelinechannel--compare-model-accuracy:
+          parameterType: NUMBER_DOUBLE
+        pipelinechannel--compare-model-model_name:
           parameterType: STRING
         pipelinechannel--lr-model-evaluation-approval:
           parameterType: BOOLEAN
@@ -188,6 +206,8 @@ components:
             schemaTitle: system.Dataset
             schemaVersion: 0.0.1
       parameters:
+        deployed_model_acc:
+          parameterType: NUMBER_DOUBLE
         thresholds_dict_str:
           parameterType: STRING
     outputDefinitions:
@@ -203,6 +223,18 @@ components:
       parameters:
         approval:
           parameterType: BOOLEAN
+  comp-fetch-current-model-metadata:
+    executorLabel: exec-fetch-current-model-metadata
+    inputDefinitions:
+      parameters:
+        model_repo_uri:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: NUMBER_DOUBLE
   comp-importer:
     executorLabel: exec-importer
     inputDefinitions:
@@ -228,6 +260,8 @@ components:
             schemaTitle: system.Dataset
             schemaVersion: 0.0.1
       parameters:
+        deployed_model_acc:
+          parameterType: NUMBER_DOUBLE
         thresholds_dict_str:
           parameterType: STRING
     outputDefinitions:
@@ -298,6 +332,8 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
+        accuracy:
+          parameterType: NUMBER_DOUBLE
         model_repo:
           parameterType: STRING
         project_id:
@@ -311,6 +347,8 @@ components:
             schemaTitle: system.Model
             schemaVersion: 0.0.1
       parameters:
+        accuracy:
+          parameterType: NUMBER_DOUBLE
         model_repo:
           parameterType: STRING
         project_id:
@@ -344,13 +382,16 @@ deploymentSpec:
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef compare_model(\n    dt_metrics: Input[Metrics],\n    lr_metrics:\
-          \ Input[Metrics],\n) -> str:\n    import logging\n\n    logging.basicConfig(level=logging.INFO)\n\
-          \n    dt_acc = dt_metrics.metadata[\"accuracy\"]\n    lr_acc = lr_metrics.metadata[\"\
-          accuracy\"]\n\n    logging.info(f\"Decision Tree Accuracy: {dt_acc}\")\n\
-          \    logging.info(f\"Logistic Regression Accuracy: {lr_acc}\")\n\n    if\
-          \ dt_acc > lr_acc:\n        logging.info(\"Decision Tree model selected.\"\
-          )\n        return \"DT\"\n    else:\n        logging.info(\"Logistic Regression\
-          \ model selected.\")\n        return \"LR\"\n\n"
+          \ Input[Metrics]\n) -> NamedTuple('outputs', [('model_name', str), ('accuracy',\
+          \ float)]):\n    import logging\n\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    # Extracting the accuracy from the input metrics\n    dt_acc = dt_metrics.metadata[\"\
+          accuracy\"]\n    lr_acc = lr_metrics.metadata[\"accuracy\"]\n\n    # Logging\
+          \ the accuracy values\n    logging.info(f\"Decision Tree Accuracy: {dt_acc}\"\
+          )\n    logging.info(f\"Logistic Regression Accuracy: {lr_acc}\")\n\n   \
+          \ # Comparing accuracies and returning the appropriate model with its accuracy\n\
+          \    if dt_acc > lr_acc:\n        logging.info(\"Decision Tree model selected.\"\
+          )\n        return (\"DT\", dt_acc)\n    else:\n        logging.info(\"Logistic\
+          \ Regression model selected.\")\n        return (\"LR\", lr_acc)\n\n"
         image: python:3.10.7-slim
     exec-dt-model-evaluation:
       container:
@@ -381,26 +422,65 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef dt_model_evaluation(\n    test_set:  Input[Dataset],\n    model_dt:\
           \ Input[Model],\n    thresholds_dict_str: str,\n    metrics: Output[ClassificationMetrics],\n\
-          \    kpi: Output[Metrics]\n) -> NamedTuple('outputs', approval=bool):\n\n\
-          \    import pandas as pd\n    from sklearn.metrics import roc_curve, confusion_matrix,\
-          \ accuracy_score\n    import json\n    import pickle\n    from numpy import\
-          \ nan_to_num\n\n    # Define a function to check if the accuracy is above\
-          \ the threshold\n    def threshold_check(val1, val2):\n        return val1\
-          \ >= val2\n\n    # Load the test dataset\n    data = pd.read_csv(test_set.path\
-          \ + \".csv\")\n\n    # Load the saved model\n    with open(model_dt.path\
-          \ + \".pkl\", 'rb') as file:\n        model = pickle.load(file)\n\n    #\
-          \ Predict the target values\n    y_test = data.drop(columns=[\"HeartDisease\"\
-          ])\n    y_target = data['HeartDisease']\n    y_pred = model.predict(y_test)\n\
-          \    y_scores = model.predict_proba(y_test)[:, 1]\n\n    # Calculate the\
-          \ ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target, y_score=y_scores,\
-          \ pos_label=True)\n    thresholds = nan_to_num(thresholds)\n    metrics.log_roc_curve(fpr,\
-          \ tpr, thresholds)\n\n    # Calculate the confusion matrix\n    metrics.log_confusion_matrix(\n\
-          \        ['Negative', 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n\
-          \    )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
+          \    kpi: Output[Metrics],\n    deployed_model_acc: float\n) -> NamedTuple('outputs',\
+          \ approval=bool):\n\n    import pandas as pd\n    from sklearn.metrics import\
+          \ roc_curve, confusion_matrix, accuracy_score, roc_auc_score\n    import\
+          \ json\n    import pickle\n    from numpy import nan_to_num\n\n    # Define\
+          \ a function to check if the accuracy is above the threshold\n    def threshold_check(val1,\
+          \ val2):\n        return val1 >= val2\n\n    # Load the test dataset\n \
+          \   data = pd.read_csv(test_set.path + \".csv\")\n\n    # Load the saved\
+          \ model\n    with open(model_dt.path + \".pkl\", 'rb') as file:\n      \
+          \  model = pickle.load(file)\n\n    # Predict the target values\n    y_test\
+          \ = data.drop(columns=[\"HeartDisease\"])\n    y_target = data['HeartDisease']\n\
+          \    y_pred = model.predict(y_test)\n    y_scores = model.predict_proba(y_test)[:,\
+          \ 1]\n\n    # Calculate the ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target,\
+          \ y_score=y_scores, pos_label=True)\n    thresholds = nan_to_num(thresholds)\n\
+          \    metrics.log_roc_curve(fpr, tpr, thresholds)\n\n    # Calculate the\
+          \ confusion matrix\n    metrics.log_confusion_matrix(\n        ['Negative',\
+          \ 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n \
+          \   )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
           \ y_pred.round())\n    thresholds_dict = json.loads(thresholds_dict_str)\n\
           \    model_dt.metadata[\"accuracy\"] = float(accuracy)\n    kpi.log_metric(\"\
-          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(float(accuracy),\
-          \ thresholds_dict['roc'])\n    return (approval_value,)\n\n"
+          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(roc_auc_score(y_target,\
+          \ y_scores), thresholds_dict['roc']) and float(accuracy) > deployed_model_acc\n\
+          \    return (approval_value,)\n\n"
+        image: python:3.10.7-slim
+    exec-fetch-current-model-metadata:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - fetch_current_model_metadata
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-storage'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef fetch_current_model_metadata(\n    project_id: str,\n    model_repo_uri:\
+          \ str,\n) -> float:\n    from google.cloud import storage\n\n    # Initialize\
+          \ the Google Cloud Storage client\n    client = storage.Client(project=project_id)\n\
+          \n    # Get the bucket where the model is stored\n    bucket = client.bucket(model_repo_uri)\n\
+          \n    # Get the specific blob for the model file\n    blob = bucket.blob('heart_disease_model.pkl')\n\
+          \n    blob.reload()\n\n    # Get the metadata of the model file\n    metadata\
+          \ = blob.metadata\n    if metadata and \"accuracy\" in metadata:\n     \
+          \   accuracy_value = float(metadata[\"accuracy\"])\n\n    # Write the accuracy\
+          \ to the output\n    return accuracy_value\n\n"
         image: python:3.10.7-slim
     exec-importer:
       importer:
@@ -438,26 +518,28 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef lr_model_evaluation(\n    test_set:  Input[Dataset],\n    model_lr:\
           \ Input[Model],\n    thresholds_dict_str: str,\n    metrics: Output[ClassificationMetrics],\n\
-          \    kpi: Output[Metrics]\n) -> NamedTuple('outputs', approval=bool):\n\n\
-          \    import pandas as pd\n    from sklearn.metrics import roc_curve, confusion_matrix,\
-          \ accuracy_score\n    import json\n    import pickle\n    from numpy import\
-          \ nan_to_num\n\n    # Define a function to check if the accuracy is above\
-          \ the threshold\n    def threshold_check(val1, val2):\n        return val1\
-          \ >= val2\n\n    # Load the test dataset\n    data = pd.read_csv(test_set.path\
-          \ + \".csv\")\n\n    # Load the saved model\n    with open(model_lr.path\
-          \ + \".pkl\", 'rb') as file:\n        model = pickle.load(file)\n\n    #\
-          \ Predict the target values\n    y_test = data.drop(columns=[\"HeartDisease\"\
-          ])\n    y_target = data['HeartDisease']\n    y_pred = model.predict(y_test)\n\
-          \    y_scores = model.predict_proba(y_test)[:, 1]\n\n    # Calculate the\
-          \ ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target, y_score=y_scores,\
-          \ pos_label=True)\n    thresholds = nan_to_num(thresholds)\n    metrics.log_roc_curve(fpr,\
-          \ tpr, thresholds)\n\n    # Calculate the confusion matrix\n    metrics.log_confusion_matrix(\n\
-          \        ['Negative', 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n\
-          \    )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
+          \    kpi: Output[Metrics],\n    deployed_model_acc: float\n) -> NamedTuple('outputs',\
+          \ approval=bool):\n\n    import pandas as pd\n    from sklearn.metrics import\
+          \ roc_curve, confusion_matrix, accuracy_score, roc_auc_score\n    import\
+          \ json\n    import pickle\n    from numpy import nan_to_num\n\n    # Define\
+          \ a function to check if the accuracy is above the threshold\n    def threshold_check(val1,\
+          \ val2):\n        return val1 >= val2\n\n    # Load the test dataset\n \
+          \   data = pd.read_csv(test_set.path + \".csv\")\n\n    # Load the saved\
+          \ model\n    with open(model_lr.path + \".pkl\", 'rb') as file:\n      \
+          \  model = pickle.load(file)\n\n    # Predict the target values\n    y_test\
+          \ = data.drop(columns=[\"HeartDisease\"])\n    y_target = data['HeartDisease']\n\
+          \    y_pred = model.predict(y_test)\n    y_scores = model.predict_proba(y_test)[:,\
+          \ 1]\n\n    # Calculate the ROC curve\n    fpr, tpr, thresholds = roc_curve(y_true=y_target,\
+          \ y_score=y_scores, pos_label=True)\n    thresholds = nan_to_num(thresholds)\n\
+          \    metrics.log_roc_curve(fpr, tpr, thresholds)\n\n    # Calculate the\
+          \ confusion matrix\n    metrics.log_confusion_matrix(\n        ['Negative',\
+          \ 'Positive'],\n        confusion_matrix(y_target, y_pred).tolist(),\n \
+          \   )\n\n    # Calculate the accuracy\n    accuracy = accuracy_score(y_target,\
           \ y_pred.round())\n    thresholds_dict = json.loads(thresholds_dict_str)\n\
           \    model_lr.metadata[\"accuracy\"] = float(accuracy)\n    kpi.log_metric(\"\
-          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(float(accuracy),\
-          \ thresholds_dict['roc'])\n    return (approval_value,)\n\n"
+          accuracy\", float(accuracy))\n\n    approval_value = threshold_check(roc_auc_score(y_target,\
+          \ y_scores), thresholds_dict['roc']) and float(accuracy) > deployed_model_acc\n\
+          \    return (approval_value,)\n\n"
         image: python:3.10.7-slim
     exec-train-dt:
       container:
@@ -567,10 +649,10 @@ deploymentSpec:
           \ *\n\ndef train_test_split(dataset: Input[Dataset], dataset_train: Output[Dataset],\
           \ dataset_test: Output[Dataset]):\n    '''train_test_split'''\n    import\
           \ pandas as pd\n    import logging \n    import sys\n    from sklearn.model_selection\
-          \ import train_test_split\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
-          \ \n\n    df = pd.read_csv(dataset.path, index_col=None)\n\n    # Function\
-          \ to check and encode values\n    def map_column(df, column_name, mapping_dict):\n\
-          \        df[column_name] = df[column_name].map(mapping_dict)\n\n    # Encode\
+          \ import train_test_split\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\n\
+          \n    # Function to check and encode values\n    def map_column(df, column_name,\
+          \ mapping_dict):\n        df[column_name] = df[column_name].map(mapping_dict)\
+          \ \n\n    df = pd.read_csv(dataset.path, index_col=None)\n\n    # Encode\
           \ categorical features and log the transformations to then know which to\
           \ put in the frontend\n    mappings = {\n        'Sex': {'M': 0, 'F': 1},\n\
           \        'ChestPainType': {'ATA': 0, 'NAP': 1, 'ASY': 2, 'TA': 3},\n   \
@@ -613,15 +695,17 @@ deploymentSpec:
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef upload_model_to_gcs(project_id: str, model_repo: str, model:\
-          \ Input[Model]):\n    '''upload model to gcs'''\n    from google.cloud import\
-          \ storage   \n    import logging \n    import sys\n\n    # Set up logging\n\
-          \    logging.basicConfig(stream=sys.stdout, level=logging.INFO)    \n\n\
-          \    # Initialize the Google Cloud Storage client\n    client = storage.Client(project=project_id)\n\
-          \n    # Get the bucket where the model will be uploaded\n    bucket = client.bucket(model_repo)\n\
-          \n    # Create a blob object for the model file\n    blob = bucket.blob('heart_disease_model.pkl')\n\
-          \n    # Upload the model file to the bucket\n    source_file_name = model.path\
-          \ + '.pkl'\n    blob.upload_from_filename(source_file_name)    \n\n    print(f\"\
-          File {source_file_name} uploaded to {model_repo}.\")\n\n"
+          \ Input[Model], accuracy: float):\n    '''upload model to gcs'''\n    from\
+          \ google.cloud import storage   \n    import logging \n    import sys\n\n\
+          \    # Set up logging\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
+          \    \n\n    # Initialize the Google Cloud Storage client\n    client =\
+          \ storage.Client(project=project_id)\n\n    # Get the bucket where the model\
+          \ will be uploaded\n    bucket = client.bucket(model_repo)\n\n    # Create\
+          \ a blob object for the model file\n    blob = bucket.blob('heart_disease_model.pkl')\n\
+          \    blob.metadata = {\"accuracy\": accuracy}\n\n    # Upload the model\
+          \ file to the bucket\n    source_file_name = model.path + '.pkl'\n    blob.upload_from_filename(source_file_name)\
+          \    \n\n    print(f\"File {source_file_name} uploaded to {model_repo}.\"\
+          )\n\n"
         image: python:3.10.7-slim
     exec-upload-model-to-gcs-2:
       container:
@@ -651,15 +735,17 @@ deploymentSpec:
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef upload_model_to_gcs(project_id: str, model_repo: str, model:\
-          \ Input[Model]):\n    '''upload model to gcs'''\n    from google.cloud import\
-          \ storage   \n    import logging \n    import sys\n\n    # Set up logging\n\
-          \    logging.basicConfig(stream=sys.stdout, level=logging.INFO)    \n\n\
-          \    # Initialize the Google Cloud Storage client\n    client = storage.Client(project=project_id)\n\
-          \n    # Get the bucket where the model will be uploaded\n    bucket = client.bucket(model_repo)\n\
-          \n    # Create a blob object for the model file\n    blob = bucket.blob('heart_disease_model.pkl')\n\
-          \n    # Upload the model file to the bucket\n    source_file_name = model.path\
-          \ + '.pkl'\n    blob.upload_from_filename(source_file_name)    \n\n    print(f\"\
-          File {source_file_name} uploaded to {model_repo}.\")\n\n"
+          \ Input[Model], accuracy: float):\n    '''upload model to gcs'''\n    from\
+          \ google.cloud import storage   \n    import logging \n    import sys\n\n\
+          \    # Set up logging\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
+          \    \n\n    # Initialize the Google Cloud Storage client\n    client =\
+          \ storage.Client(project=project_id)\n\n    # Get the bucket where the model\
+          \ will be uploaded\n    bucket = client.bucket(model_repo)\n\n    # Create\
+          \ a blob object for the model file\n    blob = bucket.blob('heart_disease_model.pkl')\n\
+          \    blob.metadata = {\"accuracy\": accuracy}\n\n    # Upload the model\
+          \ file to the bucket\n    source_file_name = model.path + '.pkl'\n    blob.upload_from_filename(source_file_name)\
+          \    \n\n    print(f\"File {source_file_name} uploaded to {model_repo}.\"\
+          )\n\n"
         image: python:3.10.7-slim
 pipelineInfo:
   name: heart-disease-predictor-training-pipeline
@@ -718,9 +804,13 @@ root:
                 outputArtifactKey: model
                 producerTask: train-dt
           parameters:
-            pipelinechannel--compare-model-Output:
+            pipelinechannel--compare-model-accuracy:
               taskOutputParameter:
-                outputParameterKey: Output
+                outputParameterKey: accuracy
+                producerTask: compare-model
+            pipelinechannel--compare-model-model_name:
+              taskOutputParameter:
+                outputParameterKey: model_name
                 producerTask: compare-model
             pipelinechannel--dt-model-evaluation-approval:
               taskOutputParameter:
@@ -733,7 +823,7 @@ root:
         taskInfo:
           name: Choose DT Model
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--compare-model-Output']
+          condition: inputs.parameter_values['pipelinechannel--compare-model-model_name']
             == 'DT'
       condition-3:
         componentRef:
@@ -749,9 +839,13 @@ root:
                 outputArtifactKey: model
                 producerTask: train-lr
           parameters:
-            pipelinechannel--compare-model-Output:
+            pipelinechannel--compare-model-accuracy:
               taskOutputParameter:
-                outputParameterKey: Output
+                outputParameterKey: accuracy
+                producerTask: compare-model
+            pipelinechannel--compare-model-model_name:
+              taskOutputParameter:
+                outputParameterKey: model_name
                 producerTask: compare-model
             pipelinechannel--lr-model-evaluation-approval:
               taskOutputParameter:
@@ -764,7 +858,7 @@ root:
         taskInfo:
           name: Choose LR Model
         triggerPolicy:
-          condition: inputs.parameter_values['pipelinechannel--compare-model-Output']
+          condition: inputs.parameter_values['pipelinechannel--compare-model-model_name']
             == 'LR'
       dt-model-evaluation:
         cachingOptions:
@@ -772,6 +866,7 @@ root:
         componentRef:
           name: comp-dt-model-evaluation
         dependentTasks:
+        - fetch-current-model-metadata
         - train-dt
         - train-test-split
         inputs:
@@ -785,10 +880,27 @@ root:
                 outputArtifactKey: dataset_test
                 producerTask: train-test-split
           parameters:
+            deployed_model_acc:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: fetch-current-model-metadata
             thresholds_dict_str:
               componentInputParameter: thresholds_dict_str
         taskInfo:
           name: dt-model-evaluation
+      fetch-current-model-metadata:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-fetch-current-model-metadata
+        inputs:
+          parameters:
+            model_repo_uri:
+              componentInputParameter: model_repo
+            project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: fetch-current-model-metadata
       importer:
         cachingOptions:
           enableCache: true
@@ -806,6 +918,7 @@ root:
         componentRef:
           name: comp-lr-model-evaluation
         dependentTasks:
+        - fetch-current-model-metadata
         - train-lr
         - train-test-split
         inputs:
@@ -819,6 +932,10 @@ root:
                 outputArtifactKey: dataset_test
                 producerTask: train-test-split
           parameters:
+            deployed_model_acc:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: fetch-current-model-metadata
             thresholds_dict_str:
               componentInputParameter: thresholds_dict_str
         taskInfo:
