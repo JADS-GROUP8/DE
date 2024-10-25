@@ -5,4 +5,4 @@ numpy
 h5py
 six
 scikit-learn
-py-test
+pytest
