@@ -18,7 +18,6 @@ class HeartDiseasePredictor:
     def predict_single_record(self, prediction_input):
         # Log the prediction input for debugging purposes
         logging.debug(prediction_input)
-        print(prediction_input)
         # Check if the model is already loaded in
         if self.model is None:
             try:

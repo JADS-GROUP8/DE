@@ -1,9 +1,11 @@
 import pytest
 from app import app
+import os
 
 
 @pytest.fixture
 def client():
+    os.environ["MODEL_REPO"] = "./prediction-api/"  # Adjust the path as needed
     with app.test_client() as client:
         yield client
 
