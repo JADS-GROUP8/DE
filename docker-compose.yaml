@@ -1,8 +1,8 @@
-version: "3.8"
-
 services:
   predictor-api:
-    image: heart-disease-predictor-api
+    build:
+      context: ./prediction-api
+      dockerfile: Dockerfile
     container_name: heart-disease-predictor-api
     ports:
       - "5000:5000"
@@ -10,7 +10,9 @@ services:
       - heart-disease-network
 
   predictor-ui:
-    image: heart-disease-predictor-ui
+    build:
+      context: ./prediction-ui
+      dockerfile: Dockerfile
     container_name: heart-disease-predictor-ui
     environment:
       - PREDICTOR_API=http://predictor-api:5000/heart_disease_predictor
