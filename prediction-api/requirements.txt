@@ -1,7 +1,7 @@
 setuptools
 flask
 pandas
-numpy==1.26.4
+numpy
 h5py
 six
 scikit-learn
