@@ -18,6 +18,7 @@ class HeartDiseasePredictor:
     def predict_single_record(self, prediction_input):
         # Log the prediction input for debugging purposes
         logging.debug(prediction_input)
+        print(prediction_input)
         # Check if the model is already loaded in
         if self.model is None:
             try:
@@ -28,7 +29,8 @@ class HeartDiseasePredictor:
                 print("MODEL_REPO is undefined")
                 self.model = self.load_model("heart_disease_model.pkl")
         # Convert the prediction input to a DataFrame
-        df = pd.DataFrame([prediction_input])
+        feature_order = list(self.model.feature_names_in_)
+        df = pd.DataFrame([prediction_input], columns=feature_order)
         # Make a prediction using the loaded model
         y_pred = self.model.predict(df)
         # Return the prediction outcome as a JSON message
