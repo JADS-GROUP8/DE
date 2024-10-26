@@ -45,11 +45,12 @@
 
         h1 {
             text-align: center;
-            color: #3a0ca3; /* Changed from var(--primary-color) to a darker purple */
+            color: #3a0ca3;
             margin-bottom: 30px;
         }
 
         form {
+            position: relative; 
             display: grid;
             gap: 20px;
         }
@@ -60,13 +61,48 @@
             display: block;
         }
 
-        input[type="text"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:hover, input[type="text"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+            outline: none;
+        }
+
         select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            appearance: none;
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236c63ff' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        select:hover, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+            outline: none;
+        }
+
+        select::-ms-expand {
+            display: none;
+        }
+
+        select option {
+            padding: 10px;
         }
 
         input[type="submit"] {
@@ -87,7 +123,67 @@
         .form-icon {
             display: block;
             margin: 0 auto 20px;
-            border-radius: 25%; /* This will make the image circular */
+            border-radius: 25%;
+        }
+
+        .info-button {
+            position: absolute; 
+            top: -200px; 
+            right: 0; 
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+        .modal-content p, .modal-content ul {
+            margin-bottom: 15px;
+        }
+        .modal-content ul {
+            padding-left: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
         }
 
         @media (max-width: 600px) {
@@ -110,8 +206,9 @@
 <body>
     <div class="container">
         <img src="https://cdn11.bigcommerce.com/s-dl22izwaan/images/stencil/original/products/1047/8585/apik5qc8i__70701.1625592298.jpg?c=1" alt="Heart icon" class="form-icon" height="100px" width="100px">
-        <h1>Check My Likelihood of Heart Disease</h1>
+        <h1>Heart Health Risk Assessment</h1>
         <form action="/checkheartdisease" method="POST">
+            <button type="button" class="info-button" id="infoBtn">i</button>
             <div>
                 <label for="age">Age (years):</label>
                 <input type="text" id="age" name="age" placeholder="Enter your age" required>
@@ -144,12 +241,16 @@
 
             <div>
                 <label for="fastingbs">Fasting Blood Sugar:</label>
-                <input type="text" id="fastingbs" name="fastingbs" placeholder="Enter fasting blood sugar" required>
+                <select id="fastingbs" name="fastingbs" required>
+                    <option value="">Select fasting blood sugar</option>
+                    <option value="0">120 mg/dl or lower</option>
+                    <option value="1">Greater than 120 mg/dl</option>
+                </select>
             </div>
 
             <div>
                 <label for="maxhr">Max Heart Rate:</label>
-                <input type="text" id="maxhr" name="maxhr" placeholder="Enter max heart rate" required>
+                <input type="text" id="maxhr" name="maxhr" placeholder="Enter max heart rate (between 60 & 202)" required>
             </div>
 
             <div>
@@ -179,5 +280,47 @@
             <input type="submit" value="Check">
         </form>
     </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 style="text-align: center;">About This Form</h2>
+            <p>This form collects various health-related information to assess the likelihood of heart disease. The factors considered include:</p>
+            <ul>
+                <li>Age</li>
+                <li>Sex</li>
+                <li>Chest pain type</li>
+                <li>Cholesterol levels</li>
+                <li>Blood sugar</li>
+                <li>Maximum heart rate</li>
+                <li>Exercise-induced angina</li>
+                <li>Oldpeak (ST depression)</li>
+                <li>ST slope</li>
+            </ul>
+            <p>Each of these factors plays a role in determining the potential risk of heart disease.</p>
+            <p>Please answer all questions accurately to get the most reliable assessment.</p>
+            <p><strong>Important Note:</strong> This is a preliminary assessment tool and should not be considered as a definitive diagnosis. Always consult with a healthcare professional for accurate medical advice.</p>
+        </div>
+    </div>
+
+    <script>
+        var modal = document.getElementById("infoModal");
+        var btn = document.getElementById("infoBtn");
+        var span = document.getElementsByClassName("close")[0];
+
+        btn.onclick = function() {
+            modal.style.display = "block";
+        }
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>
