@@ -266,9 +266,14 @@ components:
       parameters:
         approval:
           parameterType: BOOLEAN
-  comp-fetch-current-model-metadata:
-    executorLabel: exec-fetch-current-model-metadata
+  comp-fetch-prod-model:
+    executorLabel: exec-fetch-prod-model
     inputDefinitions:
+      artifacts:
+        test_set:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
       parameters:
         model_repo_uri:
           parameterType: STRING
@@ -504,13 +509,13 @@ deploymentSpec:
           \ y_scores), thresholds_dict['roc']) and float(accuracy) > deployed_model_acc\n\
           \    return (approval_value,)\n\n"
         image: python:3.10.7-slim
-    exec-fetch-current-model-metadata:
+    exec-fetch-prod-model:
       container:
         args:
         - --executor_input
         - '{{$}}'
         - --function_to_execute
-        - fetch_current_model_metadata
+        - fetch_prod_model
         command:
         - sh
         - -c
@@ -519,7 +524,7 @@ deploymentSpec:
           \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
           \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
           \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-storage'\
-          \ && \"$0\" \"$@\"\n"
+          \ 'pandas' 'scikit-learn' && \"$0\" \"$@\"\n"
         - sh
         - -ec
         - 'program_path=$(mktemp -d)
@@ -531,18 +536,29 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef fetch_current_model_metadata(\n    project_id: str,\n    model_repo_uri:\
-          \ str,\n) -> float:\n    from google.cloud import storage\n\n    try:\n\
-          \        # Initialize the Google Cloud Storage client\n        client =\
-          \ storage.Client(project=project_id)\n\n        # Get the bucket where the\
-          \ model is stored\n        bucket = client.bucket(model_repo_uri)\n\n  \
-          \      # Get the specific blob for the model file\n        blob = bucket.blob('heart_disease_model.pkl')\n\
+          \ *\n\ndef fetch_prod_model(\n    project_id: str,\n    model_repo_uri:\
+          \ str,\n    test_set:  Input[Dataset],\n) -> float:\n    from google.cloud\
+          \ import storage\n    import pandas as pd\n    import pickle\n    from sklearn.metrics\
+          \ import accuracy_score\n    import logging\n    import sys\n    from io\
+          \ import BytesIO\n\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO)\
+          \    \n\n    try:\n        # Initialize the Google Cloud Storage client\n\
+          \        client = storage.Client(project=project_id)\n\n        # Get the\
+          \ bucket where the model is stored\n        bucket = client.bucket(model_repo_uri)\n\
+          \n        # Get the specific blob for the model file\n        blob = bucket.blob('heart_disease_model.pkl')\n\
+          \n        # Download the blob content as bytes and load the model\n    \
+          \    model_data = blob.download_as_bytes()\n        model = pickle.load(BytesIO(model_data))\n\
+          \n        # Load the test dataset\n        data = pd.read_csv(test_set.path\
+          \ + \".csv\")\n\n        # Prepare the test and target sets\n        y_test\
+          \ = data.drop(columns=[\"HeartDisease\"])\n        y_target = data['HeartDisease']\n\
+          \n        # Predict the target values and calculate accuracy\n        y_pred\
+          \ = model.predict(y_test)\n        accuracy = accuracy_score(y_target, y_pred.round())\n\
           \n        # Reload the blob to ensure it's up-to-date\n        blob.reload()\n\
           \n        # Get the metadata of the model file\n        metadata = blob.metadata\n\
-          \        if metadata and \"accuracy\" in metadata:\n            return float(metadata[\"\
-          accuracy\"])\n\n    except Exception as e:\n        # Log the exception\
-          \ if needed (optional)\n        print(f\"Error occurred: {e}\")\n      \
-          \  return 0.0\n\n"
+          \        if metadata and \"accuracy\" in metadata:\n            if float(metadata[\"\
+          accuracy\"]) > accuracy:\n                logging.CRITICAL(\"Model accuracy\
+          \ is below the accuracy at deployment!\")\n\n        return float(accuracy)\n\
+          \n    except Exception as e:\n        # Log the exception if needed (optional)\n\
+          \        logging.error(f\"Error occurred: {e}\")\n        return 0.0\n\n"
         image: python:3.10.7-slim
     exec-importer:
       importer:
@@ -1006,7 +1022,7 @@ root:
         componentRef:
           name: comp-dt-model-evaluation
         dependentTasks:
-        - fetch-current-model-metadata
+        - fetch-prod-model
         - train-dt
         - train-test-split
         inputs:
@@ -1023,24 +1039,31 @@ root:
             deployed_model_acc:
               taskOutputParameter:
                 outputParameterKey: Output
-                producerTask: fetch-current-model-metadata
+                producerTask: fetch-prod-model
             thresholds_dict_str:
               componentInputParameter: thresholds_dict_str
         taskInfo:
           name: dt-model-evaluation
-      fetch-current-model-metadata:
+      fetch-prod-model:
         cachingOptions:
           enableCache: true
         componentRef:
-          name: comp-fetch-current-model-metadata
+          name: comp-fetch-prod-model
+        dependentTasks:
+        - train-test-split
         inputs:
+          artifacts:
+            test_set:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_test
+                producerTask: train-test-split
           parameters:
             model_repo_uri:
               componentInputParameter: model_repo
             project_id:
               componentInputParameter: project_id
         taskInfo:
-          name: fetch-current-model-metadata
+          name: fetch-prod-model
       importer:
         cachingOptions:
           enableCache: true
@@ -1058,7 +1081,7 @@ root:
         componentRef:
           name: comp-lr-model-evaluation
         dependentTasks:
-        - fetch-current-model-metadata
+        - fetch-prod-model
         - train-lr
         - train-test-split
         inputs:
@@ -1075,7 +1098,7 @@ root:
             deployed_model_acc:
               taskOutputParameter:
                 outputParameterKey: Output
-                producerTask: fetch-current-model-metadata
+                producerTask: fetch-prod-model
             thresholds_dict_str:
               componentInputParameter: thresholds_dict_str
         taskInfo:
