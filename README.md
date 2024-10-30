@@ -41,7 +41,7 @@ README.md                   # Project README file
 
 3. **Access the application**:
    - The prediction API will be available at `http://localhost:5000`.
-   - The user interface will be available at `http://localhost:5001`.
+   - The user interface will be available at `http://localhost:5001/checkheartdisease`.
 
 ### Testing
 
