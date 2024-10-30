@@ -4,7 +4,7 @@
 
 This project is a heart disease prediction application consisting of two main components: a prediction API and a user interface (UI). The prediction API uses a machine learning model to predict the likelihood of heart disease based on user input, while the UI provides a web interface for users to input their data and view the prediction results.
 
-## File Structure
+## Folder Structure
 
 ```
 .github/                    # GitHub Actions workflows for CI/CD
